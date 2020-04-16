@@ -5,9 +5,9 @@
 ## Prerequisite
  Enable CloudTrail logs
 
-## ![Architecture](http://url/to/img.png)
+## ![Architecture](https://github.com/jayanthck/GetAWSAccountLoginMetrics/blob/master/Architecture.png)
 
 ## Deploy
 ```
-aws cloudformation deploy --stack-name accountLoginMetrics --template-file ./accountLoginMetrics.yaml
+aws cloudformation deploy --stack-name accountLoginMetrics --template-file ./accountLoginMetrics.yaml --capabilities CAPABILITY_NAMED_IAM
 ```
