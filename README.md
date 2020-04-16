@@ -6,7 +6,8 @@ This Repo contains cloud formation template to capture the number of AWS account
 ### Prerequisite
 Enable CloudTrail logs
 
-## ![Architecture](https://github.com/jayanthck/GetAWSAccountLoginMetrics/blob/master/Architecture.png)
+## Architecture
+![Architecture](https://github.com/jayanthck/GetAWSAccountLoginMetrics/blob/master/Architecture.png)
 
 ### Deploy
 ```
