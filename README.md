@@ -1,7 +1,7 @@
 # AWS Account Login Monitoring 
 
 ### Description 
-This Repo contains cloud formation template to capture the number of AWS account login 
+This Repo contains cloudformation template to capture the number of AWS account login 
 
 ### Prerequisite
 Enable CloudTrail logs
