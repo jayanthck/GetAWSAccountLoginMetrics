@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: This cf template creates Amazon CloudWatch Event Rule and an AWS Lambda function to monitor acount login activity
+Parameters:
+  LambdaTimeout:
+    Type: Number
+    Default: '60'
+    Description: Enter a timeout value in seconds for the lambda function. Min is 3, max is 300 and default is 60.
+Resources:
+  EventsRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Description: Events rule for monitoring root API activity
+      EventPattern:
+        detail-type:
+          - AWS Console Sign In via CloudTrail
+        detail:
+          eventName:
+            - ConsoleLogin
+      Name: !Sub '${AWS::StackName}-RootActivityRule'
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt LoginActivityLambda.Arn
+          Id: !Ref 'AWS::StackName'
+  LoginActivityLambda:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        ZipFile: |
+          import json
+          import boto3
+          import logging
+          logger = logging.getLogger()
+          logger.setLevel(logging.INFO)
+          def lambda_handler(event, context):
+            logger.info(event)
+            cloudwatchClient = boto3.client(
+                'cloudwatch'
+            )
+            cloudwatchClient.put_metric_data(
+                Namespace="Account",
+                MetricData=[
+                    {
+                        "MetricName": "Login",
+                        "Value": 1.0,
+                        "Unit": "Count",
+                    },
+                ]
+            )
+            logger.info("metrics added")
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaConsoleLoginMonitorRole.Arn
+      Runtime: python3.6
+      Timeout: !Ref LambdaTimeout
+  LambdaConsoleLoginMonitorRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+      RoleName: !Sub '${AWS::StackName}-LambdaConsoleLoginMonitorRole'
+  LambdaConsoleLoginMonitorPolicy:
+    Type: 'AWS::IAM::Policy'
+    DependsOn: LambdaConsoleLoginMonitorRole
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: LogStreamAccess
+            Effect: Allow
+            Action:
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource:
+              - 'arn:aws:logs:*:*:*'
+          - Sid: Metricsadminaccess
+            Effect: Allow
+            Action:
+              - 'cloudwatch:*'
+            Resource:
+              - '*'
+      PolicyName: !Sub '${AWS::StackName}-LambdaConsoleLoginMonitorPolicy'
+      Roles: !Ref LambdaConsoleLoginMonitorRole
+  LambdaPermission:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref LoginActivityLambda
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventsRule.Arn
+Outputs:
+  EventsRule:
+    Value: !Ref EventsRule
+    Export:
+      Name: !Sub '${AWS::StackName}-ConsoleLoginMonitorEventsRule'
+    Description: Event Rule ID.
+  LambdaFuncName:
+    Value: !Ref LoginActivityLambda
+    Export:
+      Name: !Sub '${AWS::StackName}-ConsoleLoginMonitorLambda'
+    Description: Lambda function logical ID.
